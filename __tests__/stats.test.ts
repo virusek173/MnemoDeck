@@ -3,10 +3,12 @@ import { StatsState, CardStats } from '../src/types';
 
 function makeCard(overrides: Partial<CardStats> & { cardNumber: number }): CardStats {
   return {
-    avgTime: 0,
+    avgTimeA: 0,
+    avgTimeB: 0,
     dontKnowCount: 0,
     totalAttempts: 0,
-    times: [],
+    timesA: [],
+    timesB: [],
     ...overrides,
   };
 }
@@ -44,7 +46,7 @@ describe('getWorstCards', () => {
   it('excludes cards with no attempts', () => {
     const stats: StatsState = {
       cards: {
-        1: makeCard({ cardNumber: 1, totalAttempts: 0, avgTime: 0 }),
+        1: makeCard({ cardNumber: 1, totalAttempts: 0, avgTimeA: 0 }),
       },
     };
     expect(getWorstCards(stats)).toEqual([]);
@@ -53,9 +55,9 @@ describe('getWorstCards', () => {
   it('sorts cards by avgTime descending', () => {
     const stats: StatsState = {
       cards: {
-        1: makeCard({ cardNumber: 1, totalAttempts: 3, avgTime: 1000 }),
-        2: makeCard({ cardNumber: 2, totalAttempts: 2, avgTime: 3000 }),
-        3: makeCard({ cardNumber: 3, totalAttempts: 1, avgTime: 2000 }),
+        1: makeCard({ cardNumber: 1, totalAttempts: 3, avgTimeA: 1000 }),
+        2: makeCard({ cardNumber: 2, totalAttempts: 2, avgTimeA: 3000 }),
+        3: makeCard({ cardNumber: 3, totalAttempts: 1, avgTimeA: 2000 }),
       },
     };
     const result = getWorstCards(stats);
@@ -65,8 +67,8 @@ describe('getWorstCards', () => {
   it('returns only cards with at least one attempt', () => {
     const stats: StatsState = {
       cards: {
-        1: makeCard({ cardNumber: 1, totalAttempts: 5, avgTime: 500 }),
-        2: makeCard({ cardNumber: 2, totalAttempts: 0, avgTime: 9999 }),
+        1: makeCard({ cardNumber: 1, totalAttempts: 5, avgTimeA: 500 }),
+        2: makeCard({ cardNumber: 2, totalAttempts: 0, avgTimeA: 9999 }),
       },
     };
     const result = getWorstCards(stats);
