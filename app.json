@@ -19,7 +19,6 @@
     },
     "platforms": ["ios", "android"],
     "sdkVersion": "54.0.0",
-    "newArchEnabled": false,
     "extra": {
       "eas": {
         "projectId": "0452ab9d-7028-4856-a937-d15e847cba74"
