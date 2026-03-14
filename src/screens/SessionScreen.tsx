@@ -26,7 +26,12 @@ interface SessionScreenProps {
   onFinish: () => void;
 }
 
-export function SessionScreen({ currentLevel, roundType, sessionCards, onFinish }: SessionScreenProps) {
+export function SessionScreen({
+  currentLevel,
+  roundType,
+  sessionCards,
+  onFinish,
+}: SessionScreenProps) {
   const insets = useSafeAreaInsets();
   const { recordTime, recordDontKnow } = useStats();
   const limitSeconds = TIME_LEVELS[Math.min(currentLevel, TIME_LEVELS.length - 1)];
@@ -78,7 +83,15 @@ export function SessionScreen({ currentLevel, roundType, sessionCards, onFinish 
 
   function handleKnew() {
     if (!currentCard) return;
-    setResults((prev) => [...prev, { cardNumber: currentCard.number, word: currentCard.word, knew: true, timeMs: lastElapsedRef.current }]);
+    setResults((prev) => [
+      ...prev,
+      {
+        cardNumber: currentCard.number,
+        word: currentCard.word,
+        knew: true,
+        timeMs: lastElapsedRef.current,
+      },
+    ]);
     const newQueue = queue.slice(1);
     if (newQueue.length === 0) {
       setQueue([]);
@@ -95,7 +108,15 @@ export function SessionScreen({ currentLevel, roundType, sessionCards, onFinish 
   function handleDontKnow() {
     if (!currentCard) return;
     recordDontKnow(currentCard.number);
-    setResults((prev) => [...prev, { cardNumber: currentCard.number, word: currentCard.word, knew: false, timeMs: lastElapsedRef.current }]);
+    setResults((prev) => [
+      ...prev,
+      {
+        cardNumber: currentCard.number,
+        word: currentCard.word,
+        knew: false,
+        timeMs: lastElapsedRef.current,
+      },
+    ]);
     setQueue([...queue.slice(1), currentCard]);
     setPhase('question');
     setTimerRunning(true);
@@ -114,12 +135,17 @@ export function SessionScreen({ currentLevel, roundType, sessionCards, onFinish 
     const avgMs = lastResults.length > 0 ? totalMs / lastResults.length : 0;
 
     return (
-      <ScrollView style={styles.container} contentContainerStyle={[styles.summaryContent, { paddingTop: insets.top + 24 }]}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={[styles.summaryContent, { paddingTop: insets.top + 24 }]}
+      >
         <Text style={styles.summaryTitle}>Sesja zakończona!</Text>
 
         <View style={styles.overallStats}>
           <View style={styles.statBox}>
-            <Text style={styles.statValue}>{knewCount}/{sessionCards.length}</Text>
+            <Text style={styles.statValue}>
+              {knewCount}/{sessionCards.length}
+            </Text>
             <Text style={styles.statLabel}>Wiem</Text>
           </View>
           <View style={styles.statBox}>
@@ -140,9 +166,7 @@ export function SessionScreen({ currentLevel, roundType, sessionCards, onFinish 
             <Text style={[styles.colNum, styles.cellText]}>{r.cardNumber}</Text>
             <Text style={[styles.colWord, styles.cellText]}>{r.word}</Text>
             <Text style={[styles.colTime, styles.cellText]}>{(r.timeMs / 1000).toFixed(2)}s</Text>
-            <Text style={r.knew ? styles.knewMark : styles.dontKnowMark}>
-              {r.knew ? '✓' : '✗'}
-            </Text>
+            <Text style={r.knew ? styles.knewMark : styles.dontKnowMark}>{r.knew ? '✓' : '✗'}</Text>
           </View>
         ))}
 

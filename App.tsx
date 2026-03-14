@@ -53,11 +53,15 @@ function GameTab() {
     }
   }, []);
 
-  useEffect(() => { loadState(); }, [loadState]);
+  useEffect(() => {
+    loadState();
+  }, [loadState]);
 
-  useFocusEffect(useCallback(() => {
-    if (!inSession) loadState();
-  }, [inSession, loadState]));
+  useFocusEffect(
+    useCallback(() => {
+      if (!inSession) loadState();
+    }, [inSession, loadState]),
+  );
 
   const pickSessionCards = useCallback(async (phase: RoundType) => {
     const raw = await AsyncStorage.getItem(DECK_KEY);

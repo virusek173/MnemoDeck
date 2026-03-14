@@ -13,7 +13,12 @@ interface HomeScreenProps {
   onStart: () => void;
 }
 
-export function HomeScreen({ currentLevel, roundType, remainingInPhase, onStart }: HomeScreenProps) {
+export function HomeScreen({
+  currentLevel,
+  roundType,
+  remainingInPhase,
+  onStart,
+}: HomeScreenProps) {
   const insets = useSafeAreaInsets();
   const limitSeconds = TIME_LEVELS[Math.min(currentLevel, TIME_LEVELS.length - 1)];
   const phaseLabel = roundType === 'A' ? 'Liczba → Słowo' : 'Słowo → Liczba';

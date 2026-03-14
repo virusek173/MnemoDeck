@@ -17,10 +17,7 @@
         "backgroundColor": "#1a1a1a"
       }
     },
-    "platforms": [
-      "ios",
-      "android"
-    ],
+    "platforms": ["ios", "android"],
     "sdkVersion": "54.0.0",
     "newArchEnabled": false,
     "extra": {

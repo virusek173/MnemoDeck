@@ -54,9 +54,7 @@ export function Timer({ limitSeconds, running, onExpire, testID }: TimerProps) {
 
   return (
     <View style={styles.container} testID={testID}>
-      <Text style={[styles.timeText, isUrgent && styles.urgentText]}>
-        {remaining.toFixed(1)}s
-      </Text>
+      <Text style={[styles.timeText, isUrgent && styles.urgentText]}>{remaining.toFixed(1)}s</Text>
       <View style={styles.barBackground}>
         <View
           style={[

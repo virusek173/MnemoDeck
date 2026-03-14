@@ -28,7 +28,10 @@ export function StatsScreen() {
   const dontKnowCards = getDontKnowCards(stats);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}
+    >
       <Text style={styles.header}>Statystyki</Text>
 
       <Text style={styles.sectionTitle}>Czasy (najgorsze)</Text>
@@ -70,11 +73,13 @@ export function StatsScreen() {
         <View style={styles.buttonSpacer} />
         <AppButton
           label="Reset postępu"
-          onPress={() => AsyncStorage.multiSet([
-            [LEVEL_KEY, '0'],
-            [PHASE_KEY, 'A'],
-            [DECK_KEY, '[]'],
-          ])}
+          onPress={() =>
+            AsyncStorage.multiSet([
+              [LEVEL_KEY, '0'],
+              [PHASE_KEY, 'A'],
+              [DECK_KEY, '[]'],
+            ])
+          }
           variant="secondary"
         />
       </View>
