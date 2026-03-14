@@ -116,22 +116,22 @@ eas build --platform ios --profile preview
 ## Card Data
 
 Cards are encoded in `src/data/cards.ts` (101 entries, numbers 0–100).
-Each entry follows the `CardData` interface:
+The source data comes from `mnemo-deck.csv` (excluded from git via `.gitignore`).
 
-```ts
-interface CardData {
-  number: number; // 0–100
-  word: string;   // mnemonic word associated with the number
-}
+### CSV format
+
+The CSV file must have exactly two columns with a header row:
+
+```
+Question,Answer
+0,zoo
+1,dół
+2,noe
+3,mysz
+4,ryż
 ```
 
-Example entries:
+- **Question** — the number (0–100)
+- **Answer** — the mnemonic word associated with that number
 
-```ts
-{ number: 0, word: 'zoo' },
-{ number: 1, word: 'dół' },
-{ number: 2, word: 'noe' },
-```
-
-To customize the deck, edit the `cards` array in `src/data/cards.ts`.
-The original `mnemo-deck.csv` file is in `.gitignore` and is not committed.
+To update the deck, edit `mnemo-deck.csv` and manually sync the changes into the `cards` array in `src/data/cards.ts`.
