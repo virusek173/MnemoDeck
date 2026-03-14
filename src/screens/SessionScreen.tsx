@@ -281,16 +281,16 @@ export function SessionScreen({ currentLevel, onLevelUp, onFinish }: SessionScre
         ) : (
           <View style={styles.answerButtons}>
             <AppButton
-              label="Wiem"
-              onPress={handleKnewClean}
-              testID="knew-button"
-            />
-            <View style={styles.buttonSpacer} />
-            <AppButton
               label="Nie wiem"
               onPress={handleDontKnowClean}
               variant="secondary"
               testID="dont-know-button"
+            />
+            <View style={styles.buttonSpacer} />
+            <AppButton
+              label="Wiem"
+              onPress={handleKnewClean}
+              testID="knew-button"
             />
           </View>
         )}
