@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useStats } from '../context/StatsContext';
 import { getWorstCards, getDontKnowCards } from '../utils/stats';
@@ -21,12 +22,13 @@ function getWord(cardNumber: number): string {
 }
 
 export function StatsScreen() {
+  const insets = useSafeAreaInsets();
   const { stats, clearStats } = useStats();
   const worstCards = getWorstCards(stats);
   const dontKnowCards = getDontKnowCards(stats);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}>
       <Text style={styles.header}>Statystyki</Text>
 
       <Text style={styles.sectionTitle}>Czasy (najgorsze)</Text>

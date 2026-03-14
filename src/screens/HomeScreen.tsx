@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppButton } from '../components/AppButton';
 import { RoundType } from '../types';
 
@@ -13,11 +14,12 @@ interface HomeScreenProps {
 }
 
 export function HomeScreen({ currentLevel, roundType, remainingInPhase, onStart }: HomeScreenProps) {
+  const insets = useSafeAreaInsets();
   const limitSeconds = TIME_LEVELS[Math.min(currentLevel, TIME_LEVELS.length - 1)];
   const phaseLabel = roundType === 'A' ? 'Liczba → Słowo' : 'Słowo → Liczba';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top + 16 }]}>
       <Text style={styles.title}>MnemoDeck</Text>
       <Text style={styles.subtitle}>System mnemoniczny 0–100</Text>
 

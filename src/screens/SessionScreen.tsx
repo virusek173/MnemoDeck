@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ViewStyle, TextStyle } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { shuffle } from '../utils/shuffle';
 import { useStats } from '../context/StatsContext';
 import { Card } from '../components/Card';
@@ -25,6 +26,7 @@ interface SessionScreenProps {
 }
 
 export function SessionScreen({ currentLevel, roundType, sessionCards, onFinish }: SessionScreenProps) {
+  const insets = useSafeAreaInsets();
   const { recordTime, recordDontKnow } = useStats();
   const limitSeconds = TIME_LEVELS[Math.min(currentLevel, TIME_LEVELS.length - 1)];
 
@@ -104,7 +106,7 @@ export function SessionScreen({ currentLevel, roundType, sessionCards, onFinish 
     const dontKnowCards = sessionCards.filter((c) => lastResultPerCard.get(c.number) === false);
 
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.summaryContent}>
+      <ScrollView style={styles.container} contentContainerStyle={[styles.summaryContent, { paddingTop: insets.top + 24 }]}>
         <Text style={styles.summaryTitle}>Sesja zakończona!</Text>
         <Text style={styles.summaryStats}>
           Wiem: {knewCount} / {sessionCards.length}
@@ -140,7 +142,7 @@ export function SessionScreen({ currentLevel, roundType, sessionCards, onFinish 
   const roundLabel = isRoundA ? 'Liczba → Słowo' : 'Słowo → Liczba';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top + 16 }]}>
       <View style={styles.header}>
         <Text style={styles.roundLabel}>{roundLabel}</Text>
         <Text style={styles.queueInfo}>Pozostało: {queue.length}</Text>
