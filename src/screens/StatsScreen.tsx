@@ -7,6 +7,8 @@ import { cards } from '../data/cards';
 import { AppButton } from '../components/AppButton';
 
 const LEVEL_KEY = '@mnemo_level';
+const PHASE_KEY = '@mnemo_phase';
+const DECK_KEY = '@mnemo_deck';
 
 function fmt(ms: number): string {
   if (ms === 0) return '—';
@@ -65,8 +67,12 @@ export function StatsScreen() {
         <AppButton label="Wyczyść statystyki" onPress={clearStats} variant="secondary" />
         <View style={styles.buttonSpacer} />
         <AppButton
-          label="Resetuj poziom"
-          onPress={() => AsyncStorage.setItem(LEVEL_KEY, '0')}
+          label="Reset postępu"
+          onPress={() => AsyncStorage.multiSet([
+            [LEVEL_KEY, '0'],
+            [PHASE_KEY, 'A'],
+            [DECK_KEY, '[]'],
+          ])}
           variant="secondary"
         />
       </View>

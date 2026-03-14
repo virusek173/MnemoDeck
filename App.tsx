@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -37,17 +37,27 @@ function GameTab() {
   const [sessionCards, setSessionCards] = useState<CardData[]>([]);
   const [remainingInPhase, setRemainingInPhase] = useState(allCards.length);
 
-  useEffect(() => {
-    Promise.all([
+  const loadState = useCallback(async () => {
+    const [level, phase, deck] = await Promise.all([
       AsyncStorage.getItem(LEVEL_KEY),
       AsyncStorage.getItem(PHASE_KEY),
       AsyncStorage.getItem(DECK_KEY),
-    ]).then(([level, phase, deck]) => {
-      if (level !== null) setCurrentLevel(parseInt(level, 10));
-      if (phase === 'B') setRoundType('B');
-      if (deck !== null) setRemainingInPhase((JSON.parse(deck) as number[]).length);
-    });
+    ]);
+    setCurrentLevel(level !== null ? parseInt(level, 10) : 0);
+    setRoundType(phase === 'B' ? 'B' : 'A');
+    if (deck !== null) {
+      const parsed = JSON.parse(deck) as number[];
+      setRemainingInPhase(parsed.length === 0 ? allCards.length : parsed.length);
+    } else {
+      setRemainingInPhase(allCards.length);
+    }
   }, []);
+
+  useEffect(() => { loadState(); }, [loadState]);
+
+  useFocusEffect(useCallback(() => {
+    if (!inSession) loadState();
+  }, [inSession, loadState]));
 
   const pickSessionCards = useCallback(async (phase: RoundType) => {
     const raw = await AsyncStorage.getItem(DECK_KEY);
