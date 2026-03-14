@@ -16,6 +16,7 @@ interface SessionResult {
   cardNumber: number;
   word: string;
   knew: boolean;
+  timeMs: number;
 }
 
 interface SessionScreenProps {
@@ -36,6 +37,7 @@ export function SessionScreen({ currentLevel, roundType, sessionCards, onFinish 
   const [timerRunning, setTimerRunning] = useState(true);
   const [timerKey, setTimerKey] = useState(0);
   const startTimeRef = useRef<number>(Date.now());
+  const lastElapsedRef = useRef<number>(0);
 
   const currentCard = queue[0];
 
@@ -45,6 +47,7 @@ export function SessionScreen({ currentLevel, roundType, sessionCards, onFinish 
 
   const handleReveal = useCallback(() => {
     const elapsed = Date.now() - startTimeRef.current;
+    lastElapsedRef.current = elapsed;
     if (currentCard) {
       recordTime(currentCard.number, elapsed, roundType);
     }
@@ -54,13 +57,14 @@ export function SessionScreen({ currentLevel, roundType, sessionCards, onFinish 
 
   const handleTimerExpire = useCallback(() => {
     if (phase !== 'question') return;
+    const expiredMs = limitSeconds * 1000;
     if (currentCard) {
-      recordTime(currentCard.number, limitSeconds * 1000, roundType);
+      recordTime(currentCard.number, expiredMs, roundType);
       recordDontKnow(currentCard.number);
     }
     setResults((prev) => [
       ...prev,
-      { cardNumber: currentCard!.number, word: currentCard!.word, knew: false },
+      { cardNumber: currentCard!.number, word: currentCard!.word, knew: false, timeMs: expiredMs },
     ]);
     setQueue((prev) => {
       const [head, ...rest] = prev;
@@ -74,7 +78,7 @@ export function SessionScreen({ currentLevel, roundType, sessionCards, onFinish 
 
   function handleKnew() {
     if (!currentCard) return;
-    setResults((prev) => [...prev, { cardNumber: currentCard.number, word: currentCard.word, knew: true }]);
+    setResults((prev) => [...prev, { cardNumber: currentCard.number, word: currentCard.word, knew: true, timeMs: lastElapsedRef.current }]);
     const newQueue = queue.slice(1);
     if (newQueue.length === 0) {
       setQueue([]);
@@ -91,7 +95,7 @@ export function SessionScreen({ currentLevel, roundType, sessionCards, onFinish 
   function handleDontKnow() {
     if (!currentCard) return;
     recordDontKnow(currentCard.number);
-    setResults((prev) => [...prev, { cardNumber: currentCard.number, word: currentCard.word, knew: false }]);
+    setResults((prev) => [...prev, { cardNumber: currentCard.number, word: currentCard.word, knew: false, timeMs: lastElapsedRef.current }]);
     setQueue([...queue.slice(1), currentCard]);
     setPhase('question');
     setTimerRunning(true);
@@ -100,32 +104,47 @@ export function SessionScreen({ currentLevel, roundType, sessionCards, onFinish 
   }
 
   if (phase === 'summary') {
-    const lastResultPerCard = new Map<number, boolean>();
-    results.forEach((r) => lastResultPerCard.set(r.cardNumber, r.knew));
-    const knewCount = [...lastResultPerCard.values()].filter(Boolean).length;
-    const dontKnowCards = sessionCards.filter((c) => lastResultPerCard.get(c.number) === false);
+    // Ostatni wynik per karta
+    const lastResultMap = new Map<number, SessionResult>();
+    results.forEach((r) => lastResultMap.set(r.cardNumber, r));
+    const lastResults = sessionCards.map((c) => lastResultMap.get(c.number)!).filter(Boolean);
+
+    const knewCount = lastResults.filter((r) => r.knew).length;
+    const totalMs = lastResults.reduce((sum, r) => sum + r.timeMs, 0);
+    const avgMs = lastResults.length > 0 ? totalMs / lastResults.length : 0;
 
     return (
       <ScrollView style={styles.container} contentContainerStyle={[styles.summaryContent, { paddingTop: insets.top + 24 }]}>
         <Text style={styles.summaryTitle}>Sesja zakończona!</Text>
-        <Text style={styles.summaryStats}>
-          Wiem: {knewCount} / {sessionCards.length}
-        </Text>
 
-        {dontKnowCards.length > 0 && (
-          <>
-            <Text style={styles.dontKnowHeader}>Nie wiedziałeś:</Text>
-            <View style={styles.resultsList}>
-              {dontKnowCards.map((card) => (
-                <View key={card.number} style={styles.resultRow}>
-                  <Text style={styles.resultNumber}>{card.number}</Text>
-                  <Text style={styles.resultWord}>{card.word}</Text>
-                  <Text style={styles.resultDontKnow}>✗</Text>
-                </View>
-              ))}
-            </View>
-          </>
-        )}
+        <View style={styles.overallStats}>
+          <View style={styles.statBox}>
+            <Text style={styles.statValue}>{knewCount}/{sessionCards.length}</Text>
+            <Text style={styles.statLabel}>Wiem</Text>
+          </View>
+          <View style={styles.statBox}>
+            <Text style={styles.statValue}>{(avgMs / 1000).toFixed(2)}s</Text>
+            <Text style={styles.statLabel}>Średni czas</Text>
+          </View>
+        </View>
+
+        <Text style={styles.sectionHeader}>Karty</Text>
+        <View style={styles.tableHeader}>
+          <Text style={[styles.colNum, styles.tableHeaderText]}>#</Text>
+          <Text style={[styles.colWord, styles.tableHeaderText]}>Słowo</Text>
+          <Text style={[styles.colTime, styles.tableHeaderText]}>Czas</Text>
+          <Text style={styles.colKnew} />
+        </View>
+        {lastResults.map((r) => (
+          <View key={r.cardNumber} style={styles.resultRow}>
+            <Text style={[styles.colNum, styles.cellText]}>{r.cardNumber}</Text>
+            <Text style={[styles.colWord, styles.cellText]}>{r.word}</Text>
+            <Text style={[styles.colTime, styles.cellText]}>{(r.timeMs / 1000).toFixed(2)}s</Text>
+            <Text style={r.knew ? styles.knewMark : styles.dontKnowMark}>
+              {r.knew ? '✓' : '✗'}
+            </Text>
+          </View>
+        ))}
 
         <View style={styles.finishButton}>
           <AppButton label="Powrót do menu" onPress={onFinish} testID="finish-button" />
@@ -232,49 +251,96 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#ffffff',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 20,
   } as TextStyle,
-  summaryStats: {
-    fontSize: 18,
-    color: '#4a9eff',
-    textAlign: 'center',
-    marginBottom: 24,
-  } as TextStyle,
-  dontKnowHeader: {
-    fontSize: 16,
-    color: '#ff4a4a',
-    fontWeight: '600',
-    marginBottom: 8,
-  } as TextStyle,
-  resultsList: {
-    marginBottom: 24,
+  overallStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 28,
   } as ViewStyle,
+  statBox: {
+    alignItems: 'center',
+    backgroundColor: '#2a2a2a',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    flex: 1,
+    marginHorizontal: 6,
+  } as ViewStyle,
+  statValue: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#4a9eff',
+  } as TextStyle,
+  statLabel: {
+    fontSize: 12,
+    color: '#666666',
+    marginTop: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  } as TextStyle,
+  sectionHeader: {
+    fontSize: 13,
+    color: '#666666',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 8,
+  } as TextStyle,
+  tableHeader: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    paddingBottom: 4,
+    marginBottom: 4,
+  } as ViewStyle,
+  tableHeaderText: {
+    fontSize: 11,
+    color: '#555555',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  } as TextStyle,
   resultRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#2a2a2a',
     borderRadius: 8,
     paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     marginBottom: 6,
   } as ViewStyle,
-  resultNumber: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#ffffff',
-    width: 48,
-  } as TextStyle,
-  resultWord: {
-    fontSize: 16,
-    color: '#ffffff',
+  colNum: {
+    width: 36,
+  } as ViewStyle,
+  colWord: {
     flex: 1,
+  } as ViewStyle,
+  colTime: {
+    width: 56,
+    textAlign: 'right',
   } as TextStyle,
-  resultDontKnow: {
-    fontSize: 20,
+  colKnew: {
+    width: 24,
+    textAlign: 'center',
+  } as TextStyle,
+  cellText: {
+    fontSize: 15,
+    color: '#ffffff',
+  } as TextStyle,
+  knewMark: {
+    fontSize: 16,
+    color: '#4aff7a',
+    fontWeight: '700',
+    width: 24,
+    textAlign: 'center',
+  } as TextStyle,
+  dontKnowMark: {
+    fontSize: 16,
     color: '#ff4a4a',
     fontWeight: '700',
+    width: 24,
+    textAlign: 'center',
   } as TextStyle,
   finishButton: {
     alignItems: 'center',
+    marginTop: 24,
   } as ViewStyle,
 });
