@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ViewStyle, TextStyle } from 'react-native';
-import { cards as allCards } from '../data/cards';
 import { shuffle } from '../utils/shuffle';
 import { useStats } from '../context/StatsContext';
 import { Card } from '../components/Card';
@@ -20,16 +19,15 @@ interface SessionResult {
 
 interface SessionScreenProps {
   currentLevel: number;
+  roundType: RoundType;
   sessionCards: CardData[];
-  onLevelUp: () => void;
   onFinish: () => void;
 }
 
-export function SessionScreen({ currentLevel, sessionCards, onLevelUp, onFinish }: SessionScreenProps) {
+export function SessionScreen({ currentLevel, roundType, sessionCards, onFinish }: SessionScreenProps) {
   const { recordTime, recordDontKnow } = useStats();
   const limitSeconds = TIME_LEVELS[Math.min(currentLevel, TIME_LEVELS.length - 1)];
 
-  const [roundType, setRoundType] = useState<RoundType>('A');
   const [queue, setQueue] = useState<CardData[]>(() => shuffle(sessionCards));
   const [phase, setPhase] = useState<Phase>('question');
   const [results, setResults] = useState<SessionResult[]>([]);
@@ -41,7 +39,7 @@ export function SessionScreen({ currentLevel, sessionCards, onLevelUp, onFinish 
 
   useEffect(() => {
     startTimeRef.current = Date.now();
-  }, [queue, roundType]);
+  }, [queue]);
 
   const handleReveal = useCallback(() => {
     const elapsed = Date.now() - startTimeRef.current;
@@ -70,26 +68,15 @@ export function SessionScreen({ currentLevel, sessionCards, onLevelUp, onFinish 
     setTimerRunning(true);
     setTimerKey((k) => k + 1);
     startTimeRef.current = Date.now();
-  }, [phase, currentCard, recordTime, recordDontKnow, limitSeconds]);
+  }, [phase, currentCard, recordTime, recordDontKnow, limitSeconds, roundType]);
 
-  function handleKnewClean() {
+  function handleKnew() {
     if (!currentCard) return;
-    const result: SessionResult = { cardNumber: currentCard.number, word: currentCard.word, knew: true };
+    setResults((prev) => [...prev, { cardNumber: currentCard.number, word: currentCard.word, knew: true }]);
     const newQueue = queue.slice(1);
-    setResults((prev) => [...prev, result]);
-
     if (newQueue.length === 0) {
-      if (roundType === 'A') {
-        setRoundType('B');
-        setQueue(shuffle(sessionCards));
-        setPhase('question');
-        setTimerRunning(true);
-        setTimerKey((k) => k + 1);
-        startTimeRef.current = Date.now();
-      } else {
-        setQueue([]);
-        setPhase('summary');
-      }
+      setQueue([]);
+      setPhase('summary');
     } else {
       setQueue(newQueue);
       setPhase('question');
@@ -99,27 +86,15 @@ export function SessionScreen({ currentLevel, sessionCards, onLevelUp, onFinish 
     }
   }
 
-  function handleDontKnowClean() {
+  function handleDontKnow() {
     if (!currentCard) return;
     recordDontKnow(currentCard.number);
-    const result: SessionResult = { cardNumber: currentCard.number, word: currentCard.word, knew: false };
-    setResults((prev) => [...prev, result]);
+    setResults((prev) => [...prev, { cardNumber: currentCard.number, word: currentCard.word, knew: false }]);
     setQueue([...queue.slice(1), currentCard]);
     setPhase('question');
     setTimerRunning(true);
     setTimerKey((k) => k + 1);
     startTimeRef.current = Date.now();
-  }
-
-  function handleSummaryFinish() {
-    // Level up when all unique cards answered correctly (last result per card = knew)
-    const lastResultPerCard = new Map<number, boolean>();
-    results.forEach((r) => lastResultPerCard.set(r.cardNumber, r.knew));
-    const allKnew = [...lastResultPerCard.values()].every(Boolean);
-    if (allKnew && currentLevel < TIME_LEVELS.length - 1) {
-      onLevelUp();
-    }
-    onFinish();
   }
 
   if (phase === 'summary') {
@@ -151,7 +126,7 @@ export function SessionScreen({ currentLevel, sessionCards, onLevelUp, onFinish 
         )}
 
         <View style={styles.finishButton}>
-          <AppButton label="Powrót do menu" onPress={handleSummaryFinish} testID="finish-button" />
+          <AppButton label="Powrót do menu" onPress={onFinish} testID="finish-button" />
         </View>
       </ScrollView>
     );
@@ -162,15 +137,13 @@ export function SessionScreen({ currentLevel, sessionCards, onLevelUp, onFinish 
   const isRoundA = roundType === 'A';
   const questionText = isRoundA ? String(currentCard.number) : currentCard.word;
   const answerText = isRoundA ? currentCard.word : String(currentCard.number);
-  const roundLabel = isRoundA ? 'Runda A: liczba → słowo' : 'Runda B: słowo → liczba';
+  const roundLabel = isRoundA ? 'Liczba → Słowo' : 'Słowo → Liczba';
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.roundLabel}>{roundLabel}</Text>
-        <Text style={styles.queueInfo}>
-          Pozostało: {queue.length} kart
-        </Text>
+        <Text style={styles.queueInfo}>Pozostało: {queue.length}</Text>
       </View>
 
       <Timer
@@ -192,25 +165,17 @@ export function SessionScreen({ currentLevel, sessionCards, onLevelUp, onFinish 
 
       <View style={styles.actions}>
         {phase === 'question' ? (
-          <AppButton
-            label="Odkryj"
-            onPress={handleReveal}
-            testID="reveal-button"
-          />
+          <AppButton label="Odkryj" onPress={handleReveal} testID="reveal-button" />
         ) : (
           <View style={styles.answerButtons}>
             <AppButton
               label="Nie wiem"
-              onPress={handleDontKnowClean}
+              onPress={handleDontKnow}
               variant="secondary"
               testID="dont-know-button"
             />
             <View style={styles.buttonSpacer} />
-            <AppButton
-              label="Wiem"
-              onPress={handleKnewClean}
-              testID="knew-button"
-            />
+            <AppButton label="Wiem" onPress={handleKnew} testID="knew-button" />
           </View>
         )}
       </View>
@@ -301,11 +266,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#ffffff',
     flex: 1,
-  } as TextStyle,
-  resultKnew: {
-    fontSize: 20,
-    color: '#4aff7a',
-    fontWeight: '700',
   } as TextStyle,
   resultDontKnow: {
     fontSize: 20,

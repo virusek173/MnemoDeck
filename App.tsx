@@ -12,7 +12,7 @@ import { SessionScreen } from './src/screens/SessionScreen';
 import { StatsScreen } from './src/screens/StatsScreen';
 import { cards as allCards } from './src/data/cards';
 import { shuffle } from './src/utils/shuffle';
-import { CardData } from './src/types';
+import { CardData, RoundType } from './src/types';
 
 const Tab = createBottomTabNavigator();
 
@@ -27,27 +27,29 @@ const INACTIVE_COLOR = '#555555';
 
 const LEVEL_KEY = '@mnemo_level';
 const DECK_KEY = '@mnemo_deck';
+const PHASE_KEY = '@mnemo_phase';
 const SESSION_SIZE = 10;
 
 function GameTab() {
   const [inSession, setInSession] = useState(false);
   const [currentLevel, setCurrentLevel] = useState(0);
+  const [roundType, setRoundType] = useState<RoundType>('A');
   const [sessionCards, setSessionCards] = useState<CardData[]>([]);
-  const [remainingInCycle, setRemainingInCycle] = useState(allCards.length);
+  const [remainingInPhase, setRemainingInPhase] = useState(allCards.length);
 
   useEffect(() => {
-    AsyncStorage.getItem(LEVEL_KEY).then((val) => {
-      if (val !== null) setCurrentLevel(parseInt(val, 10));
-    });
-    AsyncStorage.getItem(DECK_KEY).then((raw) => {
-      if (raw !== null) {
-        const deck: number[] = JSON.parse(raw);
-        setRemainingInCycle(deck.length);
-      }
+    Promise.all([
+      AsyncStorage.getItem(LEVEL_KEY),
+      AsyncStorage.getItem(PHASE_KEY),
+      AsyncStorage.getItem(DECK_KEY),
+    ]).then(([level, phase, deck]) => {
+      if (level !== null) setCurrentLevel(parseInt(level, 10));
+      if (phase === 'B') setRoundType('B');
+      if (deck !== null) setRemainingInPhase((JSON.parse(deck) as number[]).length);
     });
   }, []);
 
-  const pickSessionCards = useCallback(async () => {
+  const pickSessionCards = useCallback(async (phase: RoundType) => {
     const raw = await AsyncStorage.getItem(DECK_KEY);
     let remaining: number[] = raw ? JSON.parse(raw) : [];
 
@@ -58,35 +60,54 @@ function GameTab() {
     const picked = remaining.slice(0, SESSION_SIZE);
     const newRemaining = remaining.slice(SESSION_SIZE);
     await AsyncStorage.setItem(DECK_KEY, JSON.stringify(newRemaining));
-    setRemainingInCycle(newRemaining.length);
+    setRemainingInPhase(newRemaining.length);
 
     return allCards.filter((c) => picked.includes(c.number));
   }, []);
 
   async function handleStart() {
-    const picked = await pickSessionCards();
+    const picked = await pickSessionCards(roundType);
     setSessionCards(picked);
     setInSession(true);
   }
 
-  function handleFinish() {
+  async function handleFinish() {
     setInSession(false);
-  }
 
-  function handleLevelUp() {
-    setCurrentLevel((prev) => {
-      const next = Math.min(prev + 1, 5);
-      AsyncStorage.setItem(LEVEL_KEY, String(next));
-      return next;
-    });
+    const raw = await AsyncStorage.getItem(DECK_KEY);
+    const remaining: number[] = raw ? JSON.parse(raw) : [];
+
+    if (remaining.length === 0) {
+      // Bieżąca faza skończona
+      if (roundType === 'A') {
+        // Przejdź do fazy B
+        const newDeck = shuffle(allCards).map((c) => c.number);
+        await AsyncStorage.setItem(DECK_KEY, JSON.stringify(newDeck));
+        await AsyncStorage.setItem(PHASE_KEY, 'B');
+        setRoundType('B');
+        setRemainingInPhase(newDeck.length);
+      } else {
+        // Faza B skończona → level up, wróć do fazy A
+        const newDeck = shuffle(allCards).map((c) => c.number);
+        await AsyncStorage.setItem(DECK_KEY, JSON.stringify(newDeck));
+        await AsyncStorage.setItem(PHASE_KEY, 'A');
+        setRoundType('A');
+        setRemainingInPhase(newDeck.length);
+        setCurrentLevel((prev) => {
+          const next = Math.min(prev + 1, 5);
+          AsyncStorage.setItem(LEVEL_KEY, String(next));
+          return next;
+        });
+      }
+    }
   }
 
   if (inSession && sessionCards.length > 0) {
     return (
       <SessionScreen
         currentLevel={currentLevel}
+        roundType={roundType}
         sessionCards={sessionCards}
-        onLevelUp={handleLevelUp}
         onFinish={handleFinish}
       />
     );
@@ -95,7 +116,8 @@ function GameTab() {
   return (
     <HomeScreen
       currentLevel={currentLevel}
-      remainingInCycle={remainingInCycle}
+      roundType={roundType}
+      remainingInPhase={remainingInPhase}
       onStart={handleStart}
     />
   );
