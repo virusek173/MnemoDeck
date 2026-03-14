@@ -116,4 +116,22 @@ eas build --platform ios --profile preview
 ## Card Data
 
 Cards are encoded in `src/data/cards.ts` (101 entries, numbers 0–100).
+Each entry follows the `CardData` interface:
+
+```ts
+interface CardData {
+  number: number; // 0–100
+  word: string;   // mnemonic word associated with the number
+}
+```
+
+Example entries:
+
+```ts
+{ number: 0, word: 'zoo' },
+{ number: 1, word: 'dół' },
+{ number: 2, word: 'noe' },
+```
+
+To customize the deck, edit the `cards` array in `src/data/cards.ts`.
 The original `mnemo-deck.csv` file is in `.gitignore` and is not committed.
