@@ -3,7 +3,7 @@ import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { StatsProvider } from './src/context/StatsContext';
@@ -156,10 +156,12 @@ export default function App() {
               name="Gra"
               component={GameTab}
               options={{
-                tabBarIcon: ({ color }) => (
-                  <View>
-                    <Text style={{ fontSize: 20, color }}>🎮</Text>
-                  </View>
+                tabBarIcon: ({ color, focused }) => (
+                  <Ionicons
+                    name={focused ? 'game-controller' : 'game-controller-outline'}
+                    size={24}
+                    color={color}
+                  />
                 ),
               }}
             />
@@ -167,10 +169,12 @@ export default function App() {
               name="Statystyki"
               component={StatsScreen}
               options={{
-                tabBarIcon: ({ color }) => (
-                  <View>
-                    <Text style={{ fontSize: 20, color }}>📊</Text>
-                  </View>
+                tabBarIcon: ({ color, focused }) => (
+                  <Ionicons
+                    name={focused ? 'stats-chart' : 'stats-chart-outline'}
+                    size={24}
+                    color={color}
+                  />
                 ),
               }}
             />
