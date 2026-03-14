@@ -7,10 +7,12 @@ export type RoundType = 'A' | 'B'; // A: number→word, B: word→number
 
 export interface CardStats {
   cardNumber: number;
-  avgTime: number; // average ms to click "Odkryj"
+  avgTimeA: number; // średni czas: liczba → słowo
+  avgTimeB: number; // średni czas: słowo → liczba
   dontKnowCount: number;
   totalAttempts: number;
-  times: number[]; // all recorded times
+  timesA: number[];
+  timesB: number[];
 }
 
 export interface StatsState {

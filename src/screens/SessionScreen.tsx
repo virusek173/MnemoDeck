@@ -20,19 +20,17 @@ interface SessionResult {
 
 interface SessionScreenProps {
   currentLevel: number;
+  sessionCards: CardData[];
   onLevelUp: () => void;
   onFinish: () => void;
 }
 
-export function SessionScreen({ currentLevel, onLevelUp, onFinish }: SessionScreenProps) {
+export function SessionScreen({ currentLevel, sessionCards, onLevelUp, onFinish }: SessionScreenProps) {
   const { recordTime, recordDontKnow } = useStats();
   const limitSeconds = TIME_LEVELS[Math.min(currentLevel, TIME_LEVELS.length - 1)];
 
-  // All 101 cards, shuffled once at session start
-  const [sessionCards] = useState<CardData[]>(() => shuffle(allCards));
-
   const [roundType, setRoundType] = useState<RoundType>('A');
-  const [queue, setQueue] = useState<CardData[]>(() => shuffle(allCards));
+  const [queue, setQueue] = useState<CardData[]>(() => shuffle(sessionCards));
   const [phase, setPhase] = useState<Phase>('question');
   const [results, setResults] = useState<SessionResult[]>([]);
   const [timerRunning, setTimerRunning] = useState(true);
@@ -48,16 +46,16 @@ export function SessionScreen({ currentLevel, onLevelUp, onFinish }: SessionScre
   const handleReveal = useCallback(() => {
     const elapsed = Date.now() - startTimeRef.current;
     if (currentCard) {
-      recordTime(currentCard.number, elapsed);
+      recordTime(currentCard.number, elapsed, roundType);
     }
     setTimerRunning(false);
     setPhase('revealed');
-  }, [currentCard, recordTime]);
+  }, [currentCard, recordTime, roundType]);
 
   const handleTimerExpire = useCallback(() => {
     if (phase !== 'question') return;
     if (currentCard) {
-      recordTime(currentCard.number, limitSeconds * 1000);
+      recordTime(currentCard.number, limitSeconds * 1000, roundType);
       recordDontKnow(currentCard.number);
     }
     setResults((prev) => [

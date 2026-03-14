@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CardStats, StatsState } from '../types';
+import { CardStats, StatsState, RoundType } from '../types';
 import { computeAvgTime } from '../utils/stats';
 
 const STORAGE_KEY = '@mnemo_stats';
 
 interface StatsContextValue {
   stats: StatsState;
-  recordTime: (cardNumber: number, ms: number) => void;
+  recordTime: (cardNumber: number, ms: number, round: RoundType) => void;
   recordDontKnow: (cardNumber: number) => void;
   clearStats: () => void;
 }
@@ -25,10 +25,12 @@ function getOrCreateCard(cards: Record<number, CardStats>, cardNumber: number): 
   if (cards[cardNumber]) return cards[cardNumber];
   return {
     cardNumber,
-    avgTime: 0,
+    avgTimeA: 0,
+    avgTimeB: 0,
     dontKnowCount: 0,
     totalAttempts: 0,
-    times: [],
+    timesA: [],
+    timesB: [],
   };
 }
 
@@ -43,9 +45,7 @@ export function StatsProvider({ children }: { children: ReactNode }) {
           setStats(parsed);
         }
       })
-      .catch(() => {
-        // ignore storage errors on first run
-      });
+      .catch(() => {});
   }, []);
 
   function persist(nextStats: StatsState) {
@@ -53,15 +53,18 @@ export function StatsProvider({ children }: { children: ReactNode }) {
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(nextStats)).catch(() => {});
   }
 
-  function recordTime(cardNumber: number, ms: number) {
+  function recordTime(cardNumber: number, ms: number, round: RoundType) {
     setStats((prev) => {
       const card = getOrCreateCard(prev.cards, cardNumber);
-      const times = [...card.times, ms];
+      const timesA = round === 'A' ? [...card.timesA, ms] : card.timesA;
+      const timesB = round === 'B' ? [...card.timesB, ms] : card.timesB;
       const updated: CardStats = {
         ...card,
-        times,
+        timesA,
+        timesB,
         totalAttempts: card.totalAttempts + 1,
-        avgTime: computeAvgTime(times),
+        avgTimeA: computeAvgTime(timesA),
+        avgTimeB: computeAvgTime(timesB),
       };
       const nextStats: StatsState = {
         cards: { ...prev.cards, [cardNumber]: updated },

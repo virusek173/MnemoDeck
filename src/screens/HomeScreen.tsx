@@ -6,10 +6,11 @@ const TIME_LEVELS = [5, 4, 3, 2, 1, 0.5];
 
 interface HomeScreenProps {
   currentLevel: number;
+  remainingInCycle: number;
   onStart: () => void;
 }
 
-export function HomeScreen({ currentLevel, onStart }: HomeScreenProps) {
+export function HomeScreen({ currentLevel, remainingInCycle, onStart }: HomeScreenProps) {
   const limitSeconds = TIME_LEVELS[Math.min(currentLevel, TIME_LEVELS.length - 1)];
 
   return (
@@ -27,7 +28,9 @@ export function HomeScreen({ currentLevel, onStart }: HomeScreenProps) {
         <AppButton label="Start" onPress={onStart} testID="start-button" />
       </View>
 
-      <Text style={styles.hint}>10 losowych kart · Runda A i B</Text>
+      <Text style={styles.hint}>
+        10 kart · Runda A i B · Pozostało w cyklu: {remainingInCycle}
+      </Text>
     </View>
   );
 }

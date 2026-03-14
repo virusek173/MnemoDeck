@@ -8,6 +8,11 @@ import { AppButton } from '../components/AppButton';
 
 const LEVEL_KEY = '@mnemo_level';
 
+function fmt(ms: number): string {
+  if (ms === 0) return '—';
+  return (ms / 1000).toFixed(2) + 's';
+}
+
 function getWord(cardNumber: number): string {
   const found = cards.find((c) => c.number === cardNumber);
   return found ? found.word : '?';
@@ -22,15 +27,22 @@ export function StatsScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.header}>Statystyki</Text>
 
-      <Text style={styles.sectionTitle}>Najgorszy czas (malejąco)</Text>
+      <Text style={styles.sectionTitle}>Czasy (najgorsze)</Text>
+      <View style={styles.tableHeader}>
+        <Text style={[styles.colNum, styles.tableHeaderText]}>#</Text>
+        <Text style={[styles.colWord, styles.tableHeaderText]}>Słowo</Text>
+        <Text style={[styles.colTime, styles.tableHeaderText]}>123→abc</Text>
+        <Text style={[styles.colTime, styles.tableHeaderText]}>abc→123</Text>
+      </View>
       {worstCards.length === 0 ? (
         <Text style={styles.emptyText}>Brak danych</Text>
       ) : (
         worstCards.map((item) => (
           <View key={item.cardNumber} style={styles.row}>
-            <Text style={styles.cardNumber}>{item.cardNumber}</Text>
-            <Text style={styles.cardWord}>{getWord(item.cardNumber)}</Text>
-            <Text style={styles.cardStat}>{(item.avgTime / 1000).toFixed(2)}s</Text>
+            <Text style={[styles.colNum, styles.cellText]}>{item.cardNumber}</Text>
+            <Text style={[styles.colWord, styles.cellText]}>{getWord(item.cardNumber)}</Text>
+            <Text style={[styles.colTime, styles.cellText]}>{fmt(item.avgTimeA)}</Text>
+            <Text style={[styles.colTime, styles.cellText]}>{fmt(item.avgTimeB)}</Text>
           </View>
         ))
       )}
@@ -41,9 +53,10 @@ export function StatsScreen() {
       ) : (
         dontKnowCards.map((item) => (
           <View key={item.cardNumber} style={styles.row}>
-            <Text style={styles.cardNumber}>{item.cardNumber}</Text>
-            <Text style={styles.cardWord}>{getWord(item.cardNumber)}</Text>
-            <Text style={styles.cardStat}>✗ {item.dontKnowCount}</Text>
+            <Text style={[styles.colNum, styles.cellText]}>{item.cardNumber}</Text>
+            <Text style={[styles.colWord, styles.cellText]}>{getWord(item.cardNumber)}</Text>
+            <Text style={[styles.colTime, styles.dontKnowCount]}>✗ {item.dontKnowCount}</Text>
+            <Text style={styles.colTime} />
           </View>
         ))
       )}
@@ -81,17 +94,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#4a9eff',
-    marginBottom: 12,
+    marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 1,
   } as TextStyle,
   sectionMargin: {
     marginTop: 28,
   } as TextStyle,
-  emptyText: {
+  tableHeader: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    paddingBottom: 4,
+    marginBottom: 4,
+  } as ViewStyle,
+  tableHeaderText: {
+    fontSize: 11,
     color: '#666666',
-    fontSize: 14,
-    fontStyle: 'italic',
+    fontWeight: '600',
+    textTransform: 'uppercase',
   } as TextStyle,
   row: {
     flexDirection: 'row',
@@ -99,24 +119,32 @@ const styles = StyleSheet.create({
     backgroundColor: '#2a2a2a',
     borderRadius: 8,
     paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     marginBottom: 6,
   } as ViewStyle,
-  cardNumber: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#ffffff',
-    width: 48,
-  } as TextStyle,
-  cardWord: {
-    fontSize: 16,
-    color: '#ffffff',
+  colNum: {
+    width: 36,
+  } as ViewStyle,
+  colWord: {
     flex: 1,
+  } as ViewStyle,
+  colTime: {
+    width: 60,
+    textAlign: 'right',
   } as TextStyle,
-  cardStat: {
-    fontSize: 14,
-    color: '#4a9eff',
+  cellText: {
+    fontSize: 15,
+    color: '#ffffff',
+  } as TextStyle,
+  dontKnowCount: {
+    fontSize: 15,
+    color: '#ff4a4a',
     fontWeight: '600',
+  } as TextStyle,
+  emptyText: {
+    color: '#666666',
+    fontSize: 14,
+    fontStyle: 'italic',
   } as TextStyle,
   clearButton: {
     marginTop: 36,
