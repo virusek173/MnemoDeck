@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { StatsProvider } from './src/context/StatsContext';
 import { HomeScreen } from './src/screens/HomeScreen';
@@ -21,9 +22,17 @@ const TAB_BAR_STYLE = {
 const ACTIVE_COLOR = '#4a9eff';
 const INACTIVE_COLOR = '#555555';
 
+const LEVEL_KEY = '@mnemo_level';
+
 function GameTab() {
   const [inSession, setInSession] = useState(false);
   const [currentLevel, setCurrentLevel] = useState(0);
+
+  useEffect(() => {
+    AsyncStorage.getItem(LEVEL_KEY).then((val) => {
+      if (val !== null) setCurrentLevel(parseInt(val, 10));
+    });
+  }, []);
 
   function handleStart() {
     setInSession(true);
@@ -34,7 +43,11 @@ function GameTab() {
   }
 
   function handleLevelUp() {
-    setCurrentLevel((prev) => Math.min(prev + 1, 5));
+    setCurrentLevel((prev) => {
+      const next = Math.min(prev + 1, 5);
+      AsyncStorage.setItem(LEVEL_KEY, String(next));
+      return next;
+    });
   }
 
   if (inSession) {

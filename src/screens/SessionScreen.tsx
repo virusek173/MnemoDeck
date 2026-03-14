@@ -9,7 +9,6 @@ import { Timer } from '../components/Timer';
 import { CardData, RoundType } from '../types';
 
 const TIME_LEVELS = [5, 4, 3, 2, 1, 0.5];
-const SESSION_CARD_COUNT = 10;
 
 type Phase = 'question' | 'revealed' | 'summary';
 
@@ -29,32 +28,18 @@ export function SessionScreen({ currentLevel, onLevelUp, onFinish }: SessionScre
   const { recordTime, recordDontKnow } = useStats();
   const limitSeconds = TIME_LEVELS[Math.min(currentLevel, TIME_LEVELS.length - 1)];
 
-  // Pick 10 random cards at start
-  const [sessionCards] = useState<CardData[]>(() =>
-    shuffle(allCards).slice(0, SESSION_CARD_COUNT),
-  );
+  // All 101 cards, shuffled once at session start
+  const [sessionCards] = useState<CardData[]>(() => shuffle(allCards));
 
   const [roundType, setRoundType] = useState<RoundType>('A');
-  const [queue, setQueue] = useState<CardData[]>(() => shuffle(allCards).slice(0, SESSION_CARD_COUNT));
+  const [queue, setQueue] = useState<CardData[]>(() => shuffle(allCards));
   const [phase, setPhase] = useState<Phase>('question');
   const [results, setResults] = useState<SessionResult[]>([]);
   const [timerRunning, setTimerRunning] = useState(true);
   const [timerKey, setTimerKey] = useState(0);
   const startTimeRef = useRef<number>(Date.now());
-  const [allDone, setAllDone] = useState(false);
 
-  // Current card from front of queue
   const currentCard = queue[0];
-
-  // Initialize round B when round A finishes
-  function startRoundB() {
-    setRoundType('B');
-    setQueue(shuffle(sessionCards));
-    setPhase('question');
-    setTimerRunning(true);
-    setTimerKey((k) => k + 1);
-    startTimeRef.current = Date.now();
-  }
 
   useEffect(() => {
     startTimeRef.current = Date.now();
@@ -71,7 +56,6 @@ export function SessionScreen({ currentLevel, onLevelUp, onFinish }: SessionScre
 
   const handleTimerExpire = useCallback(() => {
     if (phase !== 'question') return;
-    // Timer expired → treat as "Nie wiem"
     if (currentCard) {
       recordTime(currentCard.number, limitSeconds * 1000);
       recordDontKnow(currentCard.number);
@@ -81,9 +65,8 @@ export function SessionScreen({ currentLevel, onLevelUp, onFinish }: SessionScre
       { cardNumber: currentCard!.number, word: currentCard!.word, knew: false },
     ]);
     setQueue((prev) => {
-      const [, ...rest] = prev;
-      const next = [...rest, currentCard!];
-      return next;
+      const [head, ...rest] = prev;
+      return [...rest, head];
     });
     setPhase('question');
     setTimerRunning(true);
@@ -91,85 +74,21 @@ export function SessionScreen({ currentLevel, onLevelUp, onFinish }: SessionScre
     startTimeRef.current = Date.now();
   }, [phase, currentCard, recordTime, recordDontKnow, limitSeconds]);
 
-  function handleKnew() {
-    if (!currentCard) return;
-    setResults((prev) => [
-      ...prev,
-      { cardNumber: currentCard.number, word: currentCard.word, knew: true },
-    ]);
-    advanceQueue(false);
-  }
-
-  function handleDontKnow() {
-    if (!currentCard) return;
-    recordDontKnow(currentCard.number);
-    setResults((prev) => [
-      ...prev,
-      { cardNumber: currentCard.number, word: currentCard.word, knew: false },
-    ]);
-    advanceQueue(true);
-  }
-
-  function advanceQueue(putBack: boolean) {
-    setQueue((prev) => {
-      const [head, ...rest] = prev;
-      if (putBack) {
-        return [...rest, head];
-      }
-      // Don't put back → check if done
-      const next = rest;
-      if (next.length === 0) {
-        // Round over
-        if (roundType === 'A') {
-          startRoundB();
-        } else {
-          // Both rounds done
-          setAllDone(true);
-          setPhase('summary');
-        }
-        return next;
-      }
-      return next;
-    });
-
-    if (!putBack) {
-      // handled inside setQueue callback
-    } else {
-      setPhase('question');
-      setTimerRunning(true);
-      setTimerKey((k) => k + 1);
-      startTimeRef.current = Date.now();
-    }
-  }
-
-  // Actually we need to handle transition to summary outside of setState
-  useEffect(() => {
-    if (allDone) {
-      setPhase('summary');
-    }
-  }, [allDone]);
-
-  // When queue empties and not putting back, transition happens inside setQueue
-  // We do this more cleanly by having a dedicated done state
   function handleKnewClean() {
     if (!currentCard) return;
     const result: SessionResult = { cardNumber: currentCard.number, word: currentCard.word, knew: true };
     const newQueue = queue.slice(1);
-
     setResults((prev) => [...prev, result]);
 
     if (newQueue.length === 0) {
       if (roundType === 'A') {
-        // Start round B
         setRoundType('B');
-        const rbQueue = shuffle(sessionCards);
-        setQueue(rbQueue);
+        setQueue(shuffle(sessionCards));
         setPhase('question');
         setTimerRunning(true);
         setTimerKey((k) => k + 1);
         startTimeRef.current = Date.now();
       } else {
-        setAllDone(true);
         setQueue([]);
         setPhase('summary');
       }
@@ -186,20 +105,19 @@ export function SessionScreen({ currentLevel, onLevelUp, onFinish }: SessionScre
     if (!currentCard) return;
     recordDontKnow(currentCard.number);
     const result: SessionResult = { cardNumber: currentCard.number, word: currentCard.word, knew: false };
-    const newQueue = [...queue.slice(1), currentCard];
-
     setResults((prev) => [...prev, result]);
-    setQueue(newQueue);
+    setQueue([...queue.slice(1), currentCard]);
     setPhase('question');
     setTimerRunning(true);
     setTimerKey((k) => k + 1);
     startTimeRef.current = Date.now();
   }
 
-  // Check if all 101 cards answered correctly below time limit to level up
-  // (simplified: if all session cards were "knew" in this session, level up)
   function handleSummaryFinish() {
-    const allKnew = results.filter((r) => r.knew).length === results.length;
+    // Level up when all unique cards answered correctly (last result per card = knew)
+    const lastResultPerCard = new Map<number, boolean>();
+    results.forEach((r) => lastResultPerCard.set(r.cardNumber, r.knew));
+    const allKnew = [...lastResultPerCard.values()].every(Boolean);
     if (allKnew && currentLevel < TIME_LEVELS.length - 1) {
       onLevelUp();
     }
@@ -207,29 +125,32 @@ export function SessionScreen({ currentLevel, onLevelUp, onFinish }: SessionScre
   }
 
   if (phase === 'summary') {
-    const knewCount = results.filter((r) => r.knew).length;
+    const lastResultPerCard = new Map<number, boolean>();
+    results.forEach((r) => lastResultPerCard.set(r.cardNumber, r.knew));
+    const knewCount = [...lastResultPerCard.values()].filter(Boolean).length;
+    const dontKnowCards = sessionCards.filter((c) => lastResultPerCard.get(c.number) === false);
+
     return (
       <ScrollView style={styles.container} contentContainerStyle={styles.summaryContent}>
         <Text style={styles.summaryTitle}>Sesja zakończona!</Text>
         <Text style={styles.summaryStats}>
-          Wiem: {knewCount} / {results.length}
+          Wiem: {knewCount} / {sessionCards.length}
         </Text>
 
-        <View style={styles.resultsList}>
-          {sessionCards.map((card) => {
-            const cardResults = results.filter((r) => r.cardNumber === card.number);
-            const lastResult = cardResults[cardResults.length - 1];
-            return (
-              <View key={card.number} style={styles.resultRow}>
-                <Text style={styles.resultNumber}>{card.number}</Text>
-                <Text style={styles.resultWord}>{card.word}</Text>
-                <Text style={lastResult?.knew ? styles.resultKnew : styles.resultDontKnow}>
-                  {lastResult?.knew ? '✓' : '✗'}
-                </Text>
-              </View>
-            );
-          })}
-        </View>
+        {dontKnowCards.length > 0 && (
+          <>
+            <Text style={styles.dontKnowHeader}>Nie wiedziałeś:</Text>
+            <View style={styles.resultsList}>
+              {dontKnowCards.map((card) => (
+                <View key={card.number} style={styles.resultRow}>
+                  <Text style={styles.resultNumber}>{card.number}</Text>
+                  <Text style={styles.resultWord}>{card.word}</Text>
+                  <Text style={styles.resultDontKnow}>✗</Text>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
 
         <View style={styles.finishButton}>
           <AppButton label="Powrót do menu" onPress={handleSummaryFinish} testID="finish-button" />
@@ -353,6 +274,12 @@ const styles = StyleSheet.create({
     color: '#4a9eff',
     textAlign: 'center',
     marginBottom: 24,
+  } as TextStyle,
+  dontKnowHeader: {
+    fontSize: 16,
+    color: '#ff4a4a',
+    fontWeight: '600',
+    marginBottom: 8,
   } as TextStyle,
   resultsList: {
     marginBottom: 24,

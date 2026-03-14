@@ -1,9 +1,12 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useStats } from '../context/StatsContext';
 import { getWorstCards, getDontKnowCards } from '../utils/stats';
 import { cards } from '../data/cards';
 import { AppButton } from '../components/AppButton';
+
+const LEVEL_KEY = '@mnemo_level';
 
 function getWord(cardNumber: number): string {
   const found = cards.find((c) => c.number === cardNumber);
@@ -47,6 +50,12 @@ export function StatsScreen() {
 
       <View style={styles.clearButton}>
         <AppButton label="Wyczyść statystyki" onPress={clearStats} variant="secondary" />
+        <View style={styles.buttonSpacer} />
+        <AppButton
+          label="Resetuj poziom"
+          onPress={() => AsyncStorage.setItem(LEVEL_KEY, '0')}
+          variant="secondary"
+        />
       </View>
     </ScrollView>
   );
@@ -112,5 +121,8 @@ const styles = StyleSheet.create({
   clearButton: {
     marginTop: 36,
     alignItems: 'center',
+  } as ViewStyle,
+  buttonSpacer: {
+    height: 12,
   } as ViewStyle,
 });
