@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "MnemoDeck",
+    "slug": "mnemo-deck",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "ios": { "supportsTablet": false },
+    "android": { "adaptiveIcon": { "backgroundColor": "#1a1a1a" } },
+    "platforms": ["ios", "android"],
+    "sdkVersion": "52.0.0"
+  }
+}
