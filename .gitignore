@@ -13,3 +13,4 @@ web-build/
 *.pem
 .env
 mnemo-deck.csv
+ios/

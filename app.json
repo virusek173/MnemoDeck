@@ -5,10 +5,28 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
-    "ios": { "supportsTablet": false },
-    "android": { "adaptiveIcon": { "backgroundColor": "#1a1a1a" } },
-    "platforms": ["ios", "android"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.jaca173.mnemodeck",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1a1a1a"
+      }
+    },
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "sdkVersion": "54.0.0",
-    "newArchEnabled": false
+    "newArchEnabled": false,
+    "extra": {
+      "eas": {
+        "projectId": "0452ab9d-7028-4856-a937-d15e847cba74"
+      }
+    }
   }
 }
