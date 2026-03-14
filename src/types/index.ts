@@ -7,8 +7,8 @@ export type RoundType = 'A' | 'B'; // A: number→word, B: word→number
 
 export interface CardStats {
   cardNumber: number;
-  avgTimeA: number; // średni czas: liczba → słowo
-  avgTimeB: number; // średni czas: słowo → liczba
+  avgTimeA: number; // average time: number → word
+  avgTimeB: number; // average time: word → number
   dontKnowCount: number;
   totalAttempts: number;
   timesA: number[];

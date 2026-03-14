@@ -92,16 +92,16 @@ function GameTab() {
     const remaining: number[] = raw ? JSON.parse(raw) : [];
 
     if (remaining.length === 0) {
-      // Bieżąca faza skończona
+      // Current phase finished
       if (roundType === 'A') {
-        // Przejdź do fazy B
+        // Move to phase B
         const newDeck = shuffle(allCards).map((c) => c.number);
         await AsyncStorage.setItem(DECK_KEY, JSON.stringify(newDeck));
         await AsyncStorage.setItem(PHASE_KEY, 'B');
         setRoundType('B');
         setRemainingInPhase(newDeck.length);
       } else {
-        // Faza B skończona → level up, wróć do fazy A
+        // Phase B finished → level up, reset to phase A
         const newDeck = shuffle(allCards).map((c) => c.number);
         await AsyncStorage.setItem(DECK_KEY, JSON.stringify(newDeck));
         await AsyncStorage.setItem(PHASE_KEY, 'A');

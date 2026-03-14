@@ -1,106 +1,106 @@
 # MnemoDeck
 
-Aplikacja mobilna do nauki systemu mnemonicznego (liczba ↔ słowo) dla liczb 0–100.
+A mobile app for learning the mnemonic system (number ↔ word) for numbers 0–100.
 
 ## Stack
 
 - **Expo SDK 54** (managed workflow)
 - **React Native 0.81** + **TypeScript**
 - **React Navigation** — bottom tabs
-- **AsyncStorage** — persystencja statystyk, poziomu i talii kart
-- **Jest** + **React Native Testing Library** — testy jednostkowe
+- **AsyncStorage** — persistence for stats, level, and card deck
+- **Jest** + **React Native Testing Library** — unit tests
 
-## Uruchomienie (development)
+## Running (development)
 
 ```bash
 npm install --legacy-peer-deps
 npx expo start --clear
 ```
 
-Zeskanuj QR kod w aplikacji **Expo Go** (iOS/Android). Telefon i komputer muszą być w tej samej sieci Wi-Fi.
+Scan the QR code with the **Expo Go** app (iOS/Android). Your phone and computer must be on the same Wi-Fi network.
 
-> Wymaga Expo Go w wersji SDK 54. Jeśli masz starszą wersję — zaktualizuj aplikację w App Store / Google Play.
+> Requires Expo Go with SDK 54. If you have an older version, update the app from the App Store / Google Play.
 
-## Mechanika gry
+## Game Mechanics
 
-### Flow sesji
-1. **Faza A** — liczba → słowo: ~11 sesji × 10 kart = wszystkie 101 kart
-2. **Faza B** — słowo → liczba: ~11 sesji × 10 kart = wszystkie 101 kart
-3. Po ukończeniu Fazy B → **awans na następny poziom**, reset do Fazy A
+### Session Flow
+1. **Phase A** — number → word: ~11 sessions × 10 cards = all 101 cards
+2. **Phase B** — word → number: ~11 sessions × 10 cards = all 101 cards
+3. After completing Phase B → **advance to the next level**, reset to Phase A
 
-### Poziomy czasowe
-| Poziom | Limit czasu |
-|--------|-------------|
-| 1      | 5s          |
-| 2      | 4s          |
-| 3      | 3s          |
-| 4      | 2s          |
-| 5      | 1s          |
-| 6      | 0.5s        |
+### Time Levels
+| Level | Time Limit |
+|-------|------------|
+| 1     | 5s         |
+| 2     | 4s         |
+| 3     | 3s         |
+| 4     | 2s         |
+| 5     | 1s         |
+| 6     | 0.5s       |
 
-Limit mierzony od pokazania karty do kliknięcia **"Odkryj"**. Po upływie czasu karta traktowana jako "Nie wiem".
+The timer starts when the card is shown and stops when you tap **"Reveal"**. If time runs out, the card is marked as "Don't know".
 
-### Kolejka
-Karta oznaczona "Nie wiem" wraca na koniec kolejki bieżącej sesji — pojawi się ponownie w tej samej sesji.
+### Queue
+A card marked "Don't know" goes back to the end of the current session queue — it will appear again in the same session.
 
-## Struktura projektu
+## Project Structure
 
 ```
 src/
 ├── screens/
-│   ├── HomeScreen.tsx      # ekran startowy (poziom, faza, przycisk Start)
-│   ├── SessionScreen.tsx   # sesja gry (jedna runda A lub B)
-│   └── StatsScreen.tsx     # statystyki + reset
+│   ├── HomeScreen.tsx      # home screen (level, phase, Start button)
+│   ├── SessionScreen.tsx   # game session (one round A or B)
+│   └── StatsScreen.tsx     # statistics + reset
 ├── components/
-│   ├── Card.tsx            # karta z mechaniką odkrywania
-│   ├── Timer.tsx           # odliczanie z paskiem postępu
-│   └── AppButton.tsx       # przycisk (primary / secondary)
+│   ├── Card.tsx            # card with reveal mechanic
+│   ├── Timer.tsx           # countdown with progress bar
+│   └── AppButton.tsx       # button (primary / secondary)
 ├── data/
-│   └── cards.ts            # 101 kart (0–100) zakodowanych w TS
+│   └── cards.ts            # 101 cards (0–100) encoded in TS
 ├── context/
-│   └── StatsContext.tsx    # statystyki z persystencją AsyncStorage
+│   └── StatsContext.tsx    # stats with AsyncStorage persistence
 ├── utils/
 │   ├── shuffle.ts          # Fisher-Yates shuffle
-│   └── stats.ts            # obliczanie średnich czasów
+│   └── stats.ts            # average time calculations
 └── types/
     └── index.ts            # CardData, CardStats, RoundType, StatsState
 ```
 
-## AsyncStorage — klucze
+## AsyncStorage Keys
 
-| Klucz           | Zawartość                                      |
-|-----------------|------------------------------------------------|
-| `@mnemo_stats`  | statystyki per karta (czasy A/B, nie wiem)     |
-| `@mnemo_level`  | aktualny poziom (0–5)                          |
-| `@mnemo_phase`  | aktualna faza (`"A"` lub `"B"`)               |
-| `@mnemo_deck`   | pozostałe numery kart w bieżącej fazie (JSON) |
+| Key             | Content                                          |
+|-----------------|--------------------------------------------------|
+| `@mnemo_stats`  | per-card statistics (A/B times, don't know count)|
+| `@mnemo_level`  | current level (0–5)                              |
+| `@mnemo_phase`  | current phase (`"A"` or `"B"`)                  |
+| `@mnemo_deck`   | remaining card numbers in current phase (JSON)   |
 
-## Statystyki
+## Statistics
 
-- **Średni czas A** — średni czas reakcji w rundzie liczba→słowo
-- **Średni czas B** — średni czas reakcji w rundzie słowo→liczba
-- **Nie znam** — liczba oznaczonych "Nie wiem" per karta
+- **Avg Time A** — average reaction time in the number→word round
+- **Avg Time B** — average reaction time in the word→number round
+- **Don't Know** — number of "Don't know" marks per card
 
-Dane dostępne w zakładce **Statystyki**. Można je wyczyścić lub zresetować poziom przyciskami na dole ekranu.
+Data is available in the **Statistics** tab. You can clear it or reset the level using the buttons at the bottom of the screen.
 
-## Testy
+## Tests
 
 ```bash
 npm test
 ```
 
-Testy jednostkowe dla `shuffle` i `stats` w katalogu `__tests__/`.
+Unit tests for `shuffle` and `stats` are in the `__tests__/` directory.
 
 ## CI/CD
 
-GitHub Actions (`.github/workflows/ci.yml`) uruchamia przy każdym push/PR:
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push/PR:
 - `npm run lint` — ESLint
 - `npm run format:check` — Prettier
 - `npm test` — Jest
 
-## Instalacja na iOS (bez serwera dev)
+## Installing on iOS (without a dev server)
 
-### Z kontem Apple Developer ($99/rok)
+### With an Apple Developer account ($99/year)
 ```bash
 npm install -g eas-cli
 eas login
@@ -108,12 +108,12 @@ eas build:configure
 eas build --platform ios --profile preview
 ```
 
-### Bez konta — AltStore (darmowe, wygasa co 7 dni)
-1. Zainstaluj [AltStore](https://altstore.io) na Macu i iPhonie
-2. Zbuduj `.ipa` przez EAS: `eas build --platform ios --profile preview`
-3. Zainstaluj `.ipa` przez AltStore
+### Without an account — AltStore (free, expires every 7 days)
+1. Install [AltStore](https://altstore.io) on your Mac and iPhone
+2. Build the `.ipa` via EAS: `eas build --platform ios --profile preview`
+3. Install the `.ipa` through AltStore
 
-## Dane kart
+## Card Data
 
-Karty zakodowane w `src/data/cards.ts` (101 pozycji, numery 0–100).
-Oryginalny plik `mnemo-deck.csv` jest w `.gitignore` — nie jest commitowany.
+Cards are encoded in `src/data/cards.ts` (101 entries, numbers 0–100).
+The original `mnemo-deck.csv` file is in `.gitignore` and is not committed.
